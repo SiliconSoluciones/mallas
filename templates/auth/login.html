@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <!-- Logo en el login -->
+                    <img src="{{ url_for('static', filename='img/logo.png') }}" 
+                         alt="Logo Empresa" 
+                         class="mb-4"
+                         style="height: 80px;">
+                    
+                    <h4 class="mb-4">Acceso al Sistema</h4>
+                    
+                    <form method="POST">
+                        <!-- Campos de login -->
+                        <div class="mb-3">
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="usuario" 
+                                   placeholder="Usuario" 
+                                   required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="password" 
+                                   class="form-control" 
+                                   name="contraseña" 
+                                   placeholder="Contraseña" 
+                                   required>
+                        </div>
+                        
+                        <!-- Botones de acceso -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt"></i> Ingresar
+                            </button>
+                            <a href="#" class="btn btn-outline-secondary">
+                                ¿Olvidaste tu contraseña?
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

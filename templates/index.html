@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-user-plus me-2"></i>Registro de Nuevo Cliente
+            </h4>
+        </div>
+
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('agregar_cliente') }}">
+                <!-- Selector de Asesora (Solo para Admins) -->
+                {% if current_user.es_admin %}
+                <div class="mb-3">
+                    <label class="form-label">Asignar a Asesora</label>
+                    <select class="form-select" name="asesora_id" required>
+                        <option value="">Seleccione una asesora</option>
+                        {% for asesora in asesoras %}
+                        <option value="{{ asesora.id }}">{{ asesora.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% else %}
+                <input type="hidden" name="asesora_id" value="{{ current_user.id }}">
+                {% endif %}
+
+                <!-- Campos del formulario -->
+                <div class="mb-3">
+                    <label class="form-label">Nombre Completo</label>
+                    <input type="text" 
+                           class="form-control" 
+                           name="nombre" 
+                           placeholder="Ej: María González" 
+                           required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Teléfono</label>
+                    <input type="tel" 
+                           class="form-control" 
+                           name="telefono" 
+                           placeholder="Ej: 3101234567" 
+                           required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Fecha de Recordatorio</label>
+                    <input type="date" 
+                           class="form-control" 
+                           name="fecha_recordatorio">
+                    <small class="text-muted">Opcional - Fecha en la que el cliente quiere ser contactado</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Descripción del Pedido</label>
+                    <textarea class="form-control" 
+                              name="descripcion" 
+                              rows="3" 
+                              placeholder="Ej: 10 rollos de malla eslabonada 3D, calibre 14, 2.5m de alto"></textarea>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Monto Total ($)</label>
+                        <input type="number" 
+                               class="form-control" 
+                               name="monto" 
+                               step="0.01" 
+                               placeholder="Ej: 1,500,000">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Abono Inicial ($)</label>
+                        <input type="number" 
+                               class="form-control" 
+                               name="abono" 
+                               step="0.01" 
+                               placeholder="Ej: 500,000" 
+                               required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 mt-4">
+                    <i class="fas fa-save me-2"></i>Guardar Cliente
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

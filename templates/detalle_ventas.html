@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block title %}Detalle de Ventas{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 fw-bold text-primary">Reporte Detallado de Ventas</h2>
+    
+    <!-- Botón Contraer Todo -->
+    <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-outline-secondary rounded-pill" id="collapseAllBtn">
+            <i class="fas fa-chevron-up me-2"></i>Contraer Todo
+        </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            <i class="fas fa-sliders-h me-2"></i>Filtros de Búsqueda
+        </div>
+        <div class="card-body">
+            <form class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">Fecha Inicio</label>
+                    <input type="date" name="fecha_inicio" class="form-control rounded" 
+                           value="{{ fecha_inicio }}" required>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">Fecha Fin</label>
+                    <input type="date" name="fecha_fin" class="form-control rounded" 
+                           value="{{ fecha_fin }}" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill">
+                        <i class="fas fa-search me-2"></i>Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Resultados -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white d-flex align-items-center">
+            <i class="fas fa-chart-pie me-2"></i>Detalle de Ventas
+        </div>
+        <div class="card-body p-0">
+            {% if ventas %}
+                <div class="accordion" id="ventasAccordion">
+                    {% for año, meses in ventas.items()|sort(reverse=true) %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading{{ año }}">
+                            <button class="accordion-button collapsed bg-light fw-bold" type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#año{{ año }}"
+                                    aria-expanded="false" 
+                                    aria-controls="año{{ año }}">
+                                <i class="fas fa-calendar-alt me-2 text-primary"></i>Año {{ año }}
+                                <span class="badge bg-primary ms-2 rounded-pill">
+                                    {{ meses|length }} Meses
+                                </span>
+                                <span class="ms-auto fw-bold text-success">
+                                    Total Año: ${{ "%.2f"|format(meses.values()|sum(attribute='total_mes')) }}
+                                </span>
+                            </button>
+                        </h2>
+                        <div id="año{{ año }}" class="accordion-collapse collapse"
+                             aria-labelledby="heading{{ año }}" data-bs-parent="#ventasAccordion">
+                            <div class="accordion-body p-2">
+                                <div class="accordion" id="mesesAccordion{{ año }}">
+                                    {% for mes_key, datos_mes in meses.items()|sort(reverse=true) %}
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="heading{{ mes_key }}">
+                                            <button class="accordion-button collapsed" type="button" 
+                                                    data-bs-toggle="collapse" 
+                                                    data-bs-target="#{{ mes_key }}"
+                                                    aria-expanded="false" 
+                                                    aria-controls="{{ mes_key }}">
+                                                <i class="fas fa-calendar-week me-2 text-info"></i>
+                                                {{ datos_mes.mes_nombre|capitalize }}
+                                                <span class="badge bg-info ms-2 rounded-pill">
+                                                    {{ datos_mes.dias|length }} Días
+                                                </span>
+                                                <span class="ms-3 fw-bold text-success">
+                                                    Total: ${{ "%.2f"|format(datos_mes.total_mes) }}
+                                                </span>
+                                            </button>
+                                        </h2>
+                                        <div id="{{ mes_key }}" class="accordion-collapse collapse"
+                                             aria-labelledby="heading{{ mes_key }}" data-bs-parent="#mesesAccordion{{ año }}">
+                                            <div class="accordion-body p-0">
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover align-middle">
+                                                        <thead class="table-light">
+                                                            <tr>
+                                                                <th class="w-15">Día</th>
+                                                                <th class="w-50">Detalle por Asesora</th>
+                                                                <th class="w-20 text-end">Venta Individual</th>
+                                                                <th class="w-15 text-end">Total Día</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for dia, datos_dia in datos_mes.dias.items()|sort(reverse=true) %}
+                                                            <!-- Fila principal del día -->
+                                                            <tr class="table-group-divider">
+                                                                <td rowspan="{{ datos_dia.asesoras|length + 1 }}" class="fw-bold align-middle">
+                                                                    {{ dia }}
+                                                                </td>
+                                                            </tr>
+                                                            
+                                                            <!-- Filas para cada asesora usando índices -->
+                                                            {% for i in range(datos_dia.asesoras|length) %}
+                                                            <tr>
+                                                                <td>
+                                                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 p-2">
+                                                                        <i class="fas fa-user-tie me-2"></i>{{ datos_dia.asesoras[i] }}
+                                                                    </span>
+                                                                </td>
+                                                                <td class="text-end fw-bold text-success">
+                                                                    ${{ "%.2f"|format(datos_dia.totales[i]) }}
+                                                                </td>
+                                                                {% if loop.first %}
+                                                                <td rowspan="{{ datos_dia.asesoras|length }}" class="text-end align-middle">
+                                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 p-2">
+                                                                        ${{ "%.2f"|format(datos_dia.totales|sum) }}
+                                                                    </span>
+                                                                </td>
+                                                                {% endif %}
+                                                            </tr>
+                                                            {% endfor %}
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                
+                                                <!-- Resumen mensual por asesora -->
+                                                <div class="card mt-4 border-success">
+                                                    <div class="card-header bg-success bg-opacity-10 text-success fw-bold">
+                                                        <i class="fas fa-chart-bar me-2"></i>Resumen Mensual por Asesora
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            {% for asesora, total in datos_mes.asesoras_mes.items() %}
+                                                            <div class="col-md-6 col-lg-4 mb-3">
+                                                                <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                                                                    <span class="fw-bold">
+                                                                        <i class="fas fa-user-tie me-2 text-primary"></i>{{ asesora }}
+                                                                    </span>
+                                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 p-2">
+                                                                        ${{ "%.2f"|format(total) }}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center p-5">
+                    <div class="alert alert-warning d-inline-block">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No se encontraron registros para el rango seleccionado
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Script definitivo -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Manejar acordeones individuales
+    document.querySelectorAll('.accordion-button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const target = document.querySelector(this.dataset.bsTarget);
+            if (!target) return;
+            
+            // Crear instancia de Collapse
+            const collapse = new bootstrap.Collapse(target, {
+                toggle: true,
+                parent: this.closest('.accordion') ? '#' + this.closest('.accordion').id : null
+            });
+            
+            // Actualizar estado visual
+            this.classList.toggle('collapsed');
+            this.setAttribute('aria-expanded', target.classList.contains('show'));
+        });
+    });
+
+    // Botón Contraer Todo
+    document.getElementById('collapseAllBtn').addEventListener('click', () => {
+        // Cerrar todos los acordeones abiertos
+        const openSections = document.querySelectorAll('.accordion-collapse.show');
+        openSections.forEach(section => {
+            new bootstrap.Collapse(section, { hide: true });
+        });
+        
+        // Actualizar todos los botones
+        document.querySelectorAll('.accordion-button').forEach(button => {
+            button.classList.add('collapsed');
+            button.setAttribute('aria-expanded', 'false');
+        });
+    });
+});
+</script>
+
+<style>
+    .accordion-button:not(.collapsed) {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    .table-group-divider {
+        border-top: 2px solid #dee2e6;
+    }
+    .badge-hover:hover {
+        transform: scale(1.02);
+        transition: transform 0.2s ease;
+    }
+</style>
+{% endblock %}

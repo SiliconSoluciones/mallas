@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row g-4">
+        <!-- Tarjeta de Ventas del Mes Actual -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <a href="{{ url_for('detalle_ventas') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg h-100 hover-effect" style="background: linear-gradient(135deg, #198754, #13653f);">
+                    <div class="card-body text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title mb-3 fw-normal">
+                                    <i class="fa-solid fa-calendar-days me-2"></i>
+                                    {% if current_user.es_admin %}
+                                        Ventas del Mes Actual
+                                    {% else %}
+                                        Tus Ventas del Mes
+                                    {% endif %}
+                                </h5>
+                                <h2 class="mb-0 fw-bold">${{ ventas_mes_actual|round(2)|number_format }}</h2>
+                            </div>
+                            <div class="icon-container bg-white bg-opacity-25 p-3 rounded-circle">
+                                <i class="fa-solid fa-chart-column fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="d-flex align-items-center">
+                                <span class="badge bg-white text-success me-2">↑ {{ porcentaje_cambio }}%</span>
+                                vs mes anterior
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Tarjeta de Clientes Pendientes -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <a href="{{ url_for('clientes') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg h-100 hover-effect" style="background: linear-gradient(135deg, #0d6efd, #0b5ed7);">
+                    <div class="card-body text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title mb-3 fw-normal">
+                                    <i class="fa-solid fa-list-check me-2"></i>
+                                    {% if current_user.role == 'admin' %}
+                                        Pendientes Totales
+                                    {% else %}
+                                        Tus Pendientes
+                                    {% endif %}
+                                </h5>
+                                <h2 class="mb-0 fw-bold">{{ clientes_pendientes }}</h2>
+                            </div>
+                            <div class="icon-container bg-white bg-opacity-25 p-3 rounded-circle">
+                                <i class="fa-solid fa-hourglass-half fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small>Actualizado hoy</small>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- Tarjeta de Asesoras Activas -->
+        <div class="col-12 col-md-6 col-xl-4">
+            <a href="{{ url_for('admin_asesoras') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-lg h-100 hover-effect" style="background: linear-gradient(135deg, #0dcaf0, #0ba7c6);">
+                    <div class="card-body text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title mb-3 fw-normal">
+                                    <i class="fa-solid fa-users-gear me-2"></i>
+                                    Asesoras Activas
+                                </h5>
+                                <h2 class="mb-0 fw-bold">{{ total_asesoras }}</h2>
+                            </div>
+                            <div class="icon-container bg-white bg-opacity-25 p-3 rounded-circle">
+                                <i class="fa-solid fa-user-group fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small>{{ asesoras_activas }} disponibles</small>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

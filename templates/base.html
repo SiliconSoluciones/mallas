@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>{% block title %}Hiper Mallas Yopal{% endblock %}</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+     <!-- ICONo xd -->
+    <link rel="icon" href="{{ url_for('static', filename='img/ico.png') }}" type="image/png">
+</head>
+
+
+<body class="d-flex flex-column min-vh-100">
+    <!-- Barra de navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container">
+            <!-- Logo + Nombre -->
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" 
+                     alt="Logo HiperMallas" 
+                     class="d-inline-block align-top"
+                     style="height: 40px;">
+                <span class="ms-2 d-none d-md-inline">Hiper Mallas Yopal</span>
+            </a>
+
+            <!-- Botón para móviles -->
+            <button class="navbar-toggler" 
+                    type="button" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#mainNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Navbar mejorado -->
+<div class="collapse navbar-collapse" id="mainNav">
+    <ul class="navbar-nav ms-auto align-items-center">
+
+        <!-- Administración (solo admins) -->
+        {% if current_user.is_authenticated and current_user.es_admin %}
+        <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" href="{{ url_for('admin_asesoras') }}">
+                <i class="fas fa-users-cog me-2"></i> Administrar Asesoras
+            </a>
+        </li>
+        {% endif %}
+
+        <!-- Nuevo cliente (usuarios logueados) -->
+        {% if current_user.is_authenticated %}
+        <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" href="{{ url_for('index') }}">
+                <i class="fas fa-plus-circle me-2"></i> Nuevo Cliente
+            </a>
+        </li>
+        
+
+        <!-- Menú principal -->
+        <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-home me-2"></i> Dashboard
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" href="{{ url_for('clientes') }}">
+                <i class="fas fa-users me-2"></i> Pendientes
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" href="{{ url_for('ventas_finalizadas') }}">
+                <i class="fas fa-check-circle me-2"></i> Ventas Finalizadas
+            </a>
+        </li>
+       
+            <a class="nav-link d-flex align-items-center">
+        <i class="fas fa-user-circle me-2"></i> {{ current_user.nombre }}
+            </a>
+        {% endif %}
+
+        <!-- Cerrar sesión -->
+        {% if current_user.is_authenticated %}
+        <li class="nav-item ms-2">
+            <a class="btn btn-outline-light btn-sm d-flex align-items-center" href="{{ url_for('logout') }}">
+                <i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</div>
+
+        </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <main class="container flex-grow-1 mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Pie de página -->
+    <footer class="mt-auto bg-light py-3">
+        <div class="container text-center">
+            <div class="text-muted">
+                <small>
+                    &copy; Hiper Mallas Yopal - BALR<br>
+                </small>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %} 
+    {% endblock %}
+</body>
+</html>
+
+

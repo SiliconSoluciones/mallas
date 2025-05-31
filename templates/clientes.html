@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+{% block title %}Clientes Pendientes{% endblock %}
+
+{% block content %}
+<div class="card shadow-lg">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h4 class="mb-0"><i class="fas fa-clock me-2"></i>Ventas Pendientes</h4>
+        {% if current_user.es_admin %}
+        <a href="{{ url_for('registrar_cliente') }}" class="btn btn-light btn-sm">
+            <i class="fas fa-plus me-2"></i>Nuevo Cliente
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle m-0">
+                <thead class="table-info">
+                    <tr>
+                        <th style="width: 40px"></th>
+                        <th>Nombre</th>
+                        <th>Contacto</th>
+                        <th>Fecha Creación</th>
+                        <th>Fecha Recordatorio</th>
+                        <th>Asesora</th>
+                        <th>Monto Total</th>
+                        <th>Abono</th>
+                        <th>Etapa</th>
+                        <th>Descripción</th>
+                        {% if current_user.es_admin or current_user.permiso_temporal %}<th>Acciones</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr class="main-row">
+                        <td>
+                            <button class="btn btn-sm btn-link text-dark p-0"
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#details{{ cliente.id }}"
+                                    aria-expanded="false">
+                                <i class="fas fa-chevron-down toggle-icon"></i>
+                            </button>
+                        </td>
+                        <td>
+                            <a href="#" class="text-dark fw-bold text-decoration-none"
+                               data-bs-toggle="collapse" 
+                               data-bs-target="#details{{ cliente.id }}">
+                                {{ cliente.nombre }}
+                            </a>
+                        </td>
+                        
+                        <td>
+                            <a href="https://wa.me/57{{ cliente.telefono }}" 
+                               class="text-decoration-none link-success"
+                               target="_blank"
+                               data-bs-toggle="tooltip"
+                               title="Abrir en WhatsApp">
+                                <i class="fab fa-whatsapp me-2"></i>{{ cliente.telefono }}
+                            </a>
+                        </td>
+                        
+                        <td>
+                            {{ cliente.fecha_creacion.strftime('%d/%m/%Y') }}
+                        </td>
+
+                        <td>
+                            <form action="{{ url_for('actualizar_fecha_recordatorio', id=cliente.id) }}" method="POST">
+                                <input type="date" 
+                                       name="fecha_recordatorio" 
+                                       class="form-control form-control-sm"
+                                       value="{{ cliente.fecha_recordatorio.strftime('%Y-%m-%d') if cliente.fecha_recordatorio }}"
+                                       onchange="this.form.submit()"
+                                       {% if not (current_user.es_admin or current_user.permiso_temporal) and cliente.asesora_id != current_user.id %}disabled{% endif %}>
+                            </form>
+                        </td>
+                        
+                        <td>
+                            <span class="badge bg-primary">
+                                {{ cliente.asesora.nombre if cliente.asesora else 'Sin asignar' }}
+                            </span>
+                        </td>
+                        
+                        <td>${{ "%0.2f"|format(cliente.monto_total) }}</td>
+                        
+                        <td>
+                            <form action="{{ url_for('actualizar_abono', id=cliente.id) }}" method="POST">
+                                <input type="number" 
+                                       name="abono" 
+                                       class="form-control form-control-sm" 
+                                       step="0.01" 
+                                       min="0"
+                                       max="{{ cliente.monto_total }}"
+                                       value="{{ cliente.abono }}"
+                                       onchange="this.form.submit()"
+                                       {% if not (current_user.es_admin or current_user.permiso_temporal) and cliente.asesora_id != current_user.id %}disabled{% endif %}
+                                       required> 
+                            </form>
+                        </td>
+                        
+                        <td>
+                            <form action="{{ url_for('actualizar_etapa', id=cliente.id) }}" method="POST">
+                                <select name="etapa" 
+                                        class="form-select form-select-sm etapa-select"
+                                        onchange="this.form.submit()"
+                                        {% if not (current_user.es_admin or current_user.permiso_temporal) and cliente.asesora_id != current_user.id %}disabled{% endif %}>
+                                    <option value="por_llamar" {{ 'selected' if cliente.etapa == 'por_llamar' }}>📞 Por llamar</option>
+                                    <option value="fabricacion" {{ 'selected' if cliente.etapa == 'fabricacion' }}>🛠️ Fabricación</option>
+                                    <option value="por_entregar" {{ 'selected' if cliente.etapa == 'por_entregar' }}>🚚 Por entregar</option>
+                                </select>
+                            </form>
+                        </td>
+
+                        <td>
+                            <form action="{{ url_for('actualizar_descripcion', id=cliente.id) }}" method="POST">
+                                <textarea class="form-control form-control-sm" 
+                                          name="descripcion"
+                                          rows="1"
+                                          onchange="this.form.submit()"
+                                          {% if cliente.asesora_id != current_user.id and not current_user.es_admin %}disabled{% endif %}>
+                                    {{ cliente.descripcion }}
+                                </textarea>
+                            </form>
+                        </td>
+                        
+                        <td>
+                            <div class="d-flex gap-2">
+                                {% if current_user.permiso_temporal %}
+                                    <button class="btn btn-sm btn-outline-warning"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editModalLimited{{ loop.index }}"
+                                            title="Edición limitada">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                {% elif current_user.es_admin %}
+                                    <button class="btn btn-sm btn-outline-warning"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editModal{{ loop.index }}"
+                                            title="Editar cliente">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                {% endif %}
+
+                                {% if current_user.es_admin %}
+                                    <form action="{{ url_for('finalizar_venta', id=cliente.id) }}" method="POST">
+                                        <button type="submit" 
+                                                class="btn btn-sm btn-outline-success"
+                                                title="Finalizar venta"
+                                                onclick="return confirm('¿Confirmar finalización?')">
+                                            <i class="fas fa-check-circle"></i>
+                                        </button>
+                                    </form>
+
+                                    <form action="{{ url_for('eliminar_cliente', id=cliente.id) }}" method="POST">
+                                        <button type="submit" 
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Eliminar cliente"
+                                                onclick="return confirm('¿Eliminar cliente permanentemente?')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Fila de detalles desplegable -->
+                    <tr class="collapse bg-light" id="details{{ cliente.id }}">
+                        <td colspan="11">
+                            <div class="px-4 py-3">
+                                <div class="row">
+                                    <div class="col-md-6 border-end">
+                                        <h5 class="mb-4"><i class="fas fa-info-circle me-2"></i>Detalles completos</h5>
+                                        <dl class="row">
+                                            <dt class="col-sm-4">Saldo restante:</dt>
+                                            <dd class="col-sm-8 h4 text-success">
+                                                ${{ "%0.2f"|format(cliente.monto_total - cliente.abono) }}
+                                            </dd>
+                                            
+                                            <dt class="col-sm-4">Estado actual:</dt>
+                                            <dd class="col-sm-8">
+                                                <span class="badge bg-{{ 'warning' if cliente.etapa == 'por_llamar' else 'info' if cliente.etapa == 'fabricacion' else 'success' }}">
+                                                    {{ cliente.etapa|replace('_', ' ')|title }}
+                                                </span>
+                                            </dd>
+                                            
+                                            <dt class="col-sm-4">Descripción completa:</dt>
+                                            <dd class="col-sm-8">{{ cliente.descripcion or 'Sin descripción' }}</dd>
+                                            
+                            
+                                        </dl>
+                                    </div>
+                                    
+                                    <div class="col-md-6 ps-4">
+                                        <div class="d-flex flex-column h-100">
+                                            <h5 class="mb-4"><i class="fas fa-tools me-2"></i>Acciones rápidas</h5>
+                                            <div class="d-grid gap-3">
+                                                {% if current_user.es_admin %}
+                                                <form action="{{ url_for('finalizar_venta', id=cliente.id) }}" method="POST">
+                                                    <button type="submit" 
+                                                            class="btn btn-success w-100"
+                                                            onclick="return confirm('¿Confirmar finalización de la venta?')">
+                                                        <i class="fas fa-check-circle me-2"></i>Finalizar venta
+                                                    </button>
+                                                </form>
+                                                {% endif %}
+                                                
+                                                <a href="{{ url_for('detalle_cliente', id=cliente.id) }}" 
+                                                   class="btn btn-outline-primary w-100">
+                                                    <i class="fas fa-history me-2"></i>Ver detalles completos
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="11" class="text-center text-muted py-4">
+                            <i class="fas fa-box-open fa-2x"></i><br>
+                            No hay clientes pendientes
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de edición limitada para permisos temporales -->
+{% if current_user.permiso_temporal %}
+{% for cliente in clientes %}
+<div class="modal fade" id="editModalLimited{{ loop.index }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">Edición Limitada</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('editar_cliente_limited', id=cliente.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label>Nombre completo</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="nombre" 
+                                   value="{{ cliente.nombre }}"
+                                   required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label>Teléfono</label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   name="telefono"
+                                   value="{{ cliente.telefono }}"
+                                   pattern="[0-9]{10}"
+                                   required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label>Monto total</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   name="monto_total"
+                                   step="0.01"
+                                   value="{{ cliente.monto_total }}"
+                                   required>
+                        </div>
+
+                        <div class="col-12">
+                            <label>Descripción</label>
+                            <textarea class="form-control" 
+                                      name="descripcion"
+                                      rows="3">{{ cliente.descripcion }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- Modal de edición completo para administradores -->
+{% if current_user.es_admin %}
+{% for cliente in clientes %}
+<div class="modal fade" id="editModal{{ loop.index }}" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Editar Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('editar_cliente', id=cliente.id) }}" method="POST">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label>Nombre completo</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="nombre" 
+                                   value="{{ cliente.nombre }}"
+                                   required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label>Teléfono</label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   name="telefono"
+                                   value="{{ cliente.telefono }}"
+                                   pattern="[0-9]{10}"
+                                   required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label>Fecha de recordatorio</label>
+                            <input type="date" 
+                                   class="form-control" 
+                                   name="fecha_recordatorio"
+                                   value="{{ cliente.fecha_recordatorio.strftime('%Y-%m-%d') if cliente.fecha_recordatorio }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label>Monto total</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   name="monto_total"
+                                   step="0.01"
+                                   value="{{ cliente.monto_total }}"
+                                   required>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label>Descripción</label>
+                            <textarea class="form-control" 
+                                      name="descripcion"
+                                      rows="3">{{ cliente.descripcion }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<style>
+    .btn-toggle .toggle-icon {
+        transition: transform 0.3s ease;
+    }
+    
+    .btn-toggle[aria-expanded="true"] .toggle-icon {
+        transform: rotate(180deg);
+    }
+    
+    .etapa-select {
+        min-width: 140px;
+        transition: all 0.3s ease;
+    }
+    
+    .etapa-select[value="por_llamar"] { 
+        background-color: #fff3cd;
+        border-color: #ffecb5;
+    }
+    
+    .etapa-select[value="fabricacion"] { 
+        background-color: #cff4fc;
+        border-color: #b6effb;
+    }
+    
+    .etapa-select[value="por_entregar"] { 
+        background-color: #d1e7dd;
+        border-color: #c3dfd5;
+    }
+    
+    .main-row:hover {
+        background-color: rgba(13, 110, 253, 0.03) !important;
+    }
+    
+    .detail-row td {
+        border-top: 0;
+        box-shadow: inset 0 4px 8px -6px rgba(0,0,0,0.1);
+    }
+    
+    textarea.form-control-sm {
+        min-height: 38px;
+        resize: vertical;
+    }
+</style>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Inicializar tooltips
+    new bootstrap.Tooltip(document.body, {
+        selector: '[data-bs-toggle="tooltip"]'
+    });
+
+    // Controlar ícono del acordeón
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(button => {
+        button.addEventListener('click', function() {
+            const icon = this.querySelector('.toggle-icon');
+            if (icon) {
+                icon.style.transform = this.getAttribute('aria-expanded') === 'true' 
+                    ? 'rotate(180deg)' 
+                    : 'rotate(0deg)';
+            }
+        });
+    });
+
+    // Validación de abonos en tiempo real
+    document.querySelectorAll('input[name="abono"]').forEach(input => {
+        input.addEventListener('change', function() {
+            const max = parseFloat(this.getAttribute('max'));
+            const value = parseFloat(this.value);
+            
+            if (value > max) {
+                this.value = max.toFixed(2);
+                alert('El abono no puede superar el monto total');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

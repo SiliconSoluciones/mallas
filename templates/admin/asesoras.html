@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Gestión de Asesoras{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-header bg-light-subtle d-flex justify-content-between align-items-center py-3">
+            <h5 class="mb-0 text-dark fw-semibold">
+                <i class="fas fa-user-friends me-2 text-primary"></i>Gestión de Asesoras
+            </h5>
+            {% if current_user.es_admin %}
+            <a href="{{ url_for('nueva_asesora') }}" class="btn btn-primary rounded-pill px-4">
+                <i class="fas fa-plus me-2"></i>Nueva Asesora
+            </a>
+            {% endif %}
+        </div>
+        
+        <div class="card-body p-2">
+            <div class="table-responsive rounded-3">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light-subtle">
+                        <tr>
+                            <th class="ps-4 text-dark">Nombre</th>
+                            <th class="text-dark">Usuario</th>
+                            <th class="text-dark">Rol</th>
+                            <th class="text-dark">Estado</th>
+                            <th class="text-end pe-4 text-dark">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for asesora in asesoras %}
+                        <tr class="hover-shadow">
+                            <td class="ps-4 text-dark">{{ asesora.nombre }}</td>
+                            <td class="text-body-secondary">{{ asesora.usuario }}</td>
+                            <td>
+                                <span class="badge rounded-pill {% if asesora.es_admin %}bg-danger{% else %}bg-primary{% endif %} py-2 px-3 text-white">
+                                    <i class="fas fa-shield-alt me-2"></i>{{ 'Administrador' if asesora.es_admin else 'Asesor' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill {% if asesora.activa %}bg-success{% else %}bg-secondary{% endif %} py-2 px-3 text-white">
+                                    <i class="fas fa-circle me-2 small-icon"></i>{{ 'Activa' if asesora.activa else 'Inactiva' }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <a href="{{ url_for('editar_asesora', id=asesora.id) }}" 
+                                       class="btn btn-icon rounded-circle btn-outline-primary btn-sm"
+                                       data-bs-toggle="tooltip" 
+                                       title="Editar">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+                                    
+                                    {% if current_user.es_admin %}
+                                    <form action="{{ url_for('activar_permisos', id=asesora.id) }}" method="POST">
+                                        <button type="submit" 
+                                                class="btn btn-icon rounded-circle btn-outline-warning btn-sm"
+                                                data-bs-toggle="tooltip" 
+                                                title="Activar permisos temporales">
+                                            <i class="fas fa-clock"></i>
+                                        </button>
+                                    </form>
+
+                                    <button type="button" 
+                                            class="btn btn-icon rounded-circle btn-outline-danger btn-sm"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#confirmDelete{{ asesora.id }}"
+                                            title="Eliminar">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Modal de Confirmación -->
+                                <div class="modal fade" id="confirmDelete{{ asesora.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content border-0 shadow-lg">
+                                            <div class="modal-header bg-light">
+                                                <h5 class="modal-title text-danger">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar eliminación
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body py-4">
+                                                <div class="d-flex align-items-center mb-3">
+                                                    <div class="avatar-icon bg-soft-danger rounded-3 me-3 p-3">
+                                                        <i class="fas fa-user-slash text-danger fa-lg"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-1">¿Eliminar permanentemente?</h6>
+                                                        <p class="text-muted mb-0 small">{{ asesora.nombre }} ({{ asesora.usuario }})</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer bg-light">
+                                                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                <form action="{{ url_for('eliminar_asesora', id=asesora.id) }}" method="POST">
+                                                    <button type="submit" class="btn btn-danger rounded-pill px-4">
+                                                        <i class="fas fa-trash-alt me-2"></i>Eliminar
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

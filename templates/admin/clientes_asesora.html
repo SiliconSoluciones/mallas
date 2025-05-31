@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Clientes de {{ asesora.nombre }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-lg">
+    <div class="card-header bg-primary text-white">
+        <h4>
+            <i class="fas fa-users"></i> Clientes de {{ asesora.nombre }}
+            <a href="{{ url_for('admin_asesoras') }}" class="btn btn-light btn-sm float-end">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </h4>
+    </div>
+    
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Teléfono</th>
+                        <th>Fecha Contacto</th>
+                        <th>Monto Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr>
+                        <td>{{ cliente.nombre }}</td>
+                        <td>{{ cliente.telefono }}</td>
+                        <td>{{ cliente.fecha_contacto.strftime('%d/%m/%Y') }}</td>
+                        <td>${{ cliente.monto_total|round(2) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">
+                            No hay clientes registrados
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}Ventas Finalizadas · {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container-lg mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-success text-white d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+            <div>
+                <h1 class="h4 mb-0">
+                    <i class="fas fa-check-circle me-2"></i>Historial de Ventas Finalizadas
+                </h1>
+                <small class="opacity-75">
+                    Total registros: {{ pagination.total if pagination else clientes|length }}
+                    {% if search_query %} · Búsqueda: "{{ search_query }}"{% endif %}
+                </small>
+            </div>
+               
+            <div class="d-flex gap-2 flex-wrap">
+                {% if current_user.is_authenticated and current_user.es_admin %} 
+                <a href="{{ url_for('exportar_ventas') }}" 
+                   class="btn btn-light btn-sm"
+                   data-bs-toggle="tooltip"
+                   title="Exportar a Excel">
+                    <i class="fas fa-file-excel me-2"></i>Exportar
+                </a>
+            {% endif %}
+                <button class="btn btn-light btn-sm" 
+                        type="button"
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#filtrosAvanzados">
+                    <i class="fas fa-filter me-2"></i>Filtros
+                </button>
+                <a href="{{ url_for('ventas_finalizadas') }}" 
+                   class="btn btn-light btn-sm"
+                   data-bs-toggle="tooltip"
+                   title="Limpiar filtros">
+                    <i class="fas fa-times me-2"></i>Limpiar
+                </a>
+            </div>
+        </div>
+
+        <!-- Filtros avanzados -->
+        <div class="collapse" id="filtrosAvanzados">
+            <div class="card-body border-bottom">
+                <form class="row g-3">
+                    <!-- Campo de búsqueda -->
+                    <div class="col-12 col-md-4">
+                        <label class="form-label">Buscar cliente</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="search" 
+                                   placeholder="Nombre o teléfono"
+                                   value="{{ search_query }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtro por fechas -->
+                    <div class="col-12 col-md-4">
+                        <label class="form-label">Rango de fechas</label>
+                        <div class="input-group">
+                            <input type="date" class="form-control" name="fecha_inicio" value="{{ fecha_inicio }}">
+                            <span class="input-group-text">a</span>
+                            <input type="date" class="form-control" name="fecha_fin" value="{{ fecha_fin }}">
+                        </div>
+                    </div>
+
+                    
+                    <!-- Botón de aplicar filtros -->
+                    <div class="col-12 col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter me-2"></i>Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tabla interactiva -->
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-success">
+                        <tr>
+                            <th class="ps-4">Cliente</th>
+                            <th>Contacto</th>
+                            <th class="text-nowrap">Fecha Cierre</th>
+                            <th>Asesora</th>
+                            <th class="text-end">Monto</th>
+                            <th class="pe-4">Acciones</th>
+                        </tr>
+                    </thead>
+                    
+                    <tbody>
+                        {% for cliente in clientes %}
+                        <tr class="hover-highlight position-relative">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fas fa-user-tie text-secondary"></i>
+                                    <div>
+                                        <div class="fw-medium">{{ cliente.nombre }}</div>
+                                        <small class="text-muted">{{ cliente.descripcion|truncate(30) }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <td>
+                                <a href="{{ cliente.telefono|whatsapp }}" 
+                                   class="text-decoration-none link-success d-inline-flex align-items-center"
+                                   target="_blank"
+                                   data-bs-toggle="tooltip" 
+                                   title="Contactar por WhatsApp">
+                                    <i class="fab fa-whatsapp me-2 fs-5"></i>
+                                    <span class="text-nowrap">{{ cliente.telefono }}</span>
+                                </a>
+                            </td>
+                            
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="text-nowrap">
+                                        {{ cliente.fecha_creacion.strftime('%d/%m/%Y') }}
+                                    </span>
+                                    <small class="text-muted">
+                                        {{ cliente.fecha_creacion.strftime('%H:%M') }}
+                                    </small>
+                                </div>
+                            </td>
+                            
+                            <td class="text-end">
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold text-success">
+                                        ${{ cliente.monto_total|number_format }}
+                                    </span>
+                                    <small class="text-muted">
+                                        Abono: ${{ cliente.abono|number_format }}
+                                    </small>
+                                </div>
+                            </td>
+                            
+                            <td class="pe-4">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <!-- Ver detalle -->
+                                    <a href="{{ url_for('detalle_cliente', id=cliente.id) }}"
+                                       class="btn btn-sm btn-outline-primary d-flex align-items-center">
+                                        <i class="fas fa-eye me-1"></i>
+                                        <span></span>
+                                    </a>
+                                
+                                    <!-- Reabrir venta -->
+                                    {% if current_user.is_authenticated and current_user.es_admin %}
+                                    <form method="POST" action="{{ url_for('reabrir_venta', id=cliente.id) }}" class="d-inline">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-success d-flex align-items-center"
+                                                data-confirm="¿Reabrir esta venta?">
+                                            <i class="fas fa-undo me-1"></i>
+                                            <span></span>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                
+                                    <!-- Eliminar (modal) -->
+                                    {% if current_user.is_authenticated and current_user.es_admin %}
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger d-flex align-items-center"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#eliminarModal{{ cliente.id }}">
+                                        <i class="fas fa-trash-alt me-1"></i>
+                                        <span></span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="alert alert-warning m-4 text-center">
+                                    <i class="fas fa-box-open me-2"></i>
+                                    No se encontraron ventas finalizadas
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Paginación mejorada -->
+        {% if pagination and pagination.pages > 1 %}
+        <div class="card-footer bg-transparent">
+            <nav aria-label="Navegación">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="?{{ request.args|urlencode_skip_page }}&page={{ pagination.prev_num }}">
+                           <i class="fas fa-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                        <a class="page-link" 
+                           href="?{{ request.args|urlencode_skip_page }}&page={{ page }}">
+                           {{ page }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" 
+                           href="?{{ request.args|urlencode_skip_page }}&page={{ pagination.next_num }}">
+                           <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal de eliminación -->
+{% for cliente in clientes %}
+<div class="modal fade" id="eliminarModal{{ cliente.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                ¿Eliminar permanentemente a {{ cliente.nombre }} del historial?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{{ url_for('eliminar_cliente', id=cliente.id) }}">
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<style>
+    .hover-highlight {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    .hover-highlight:hover {
+        background-color: rgba(25, 135, 84, 0.03) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .dropdown-menu {
+        min-width: 200px;
+    }
+    .badge {
+        padding: 0.5em 0.8em;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Tooltips
+    new bootstrap.Tooltip(document.body, {
+        selector: '[data-bs-toggle="tooltip"]'
+    });
+
+    // Confirmación de acciones
+    document.querySelectorAll('[data-confirm]').forEach(element => {
+        element.addEventListener('click', (e) => {
+            if (!confirm(element.dataset.confirm)) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
