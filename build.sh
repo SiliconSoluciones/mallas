@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# exit on error
 set -o errexit
 
+# 1) Instala dependencias
 pip install -r requirements.txt
-python init_db.py
+
+# 2) Usa el CLI de Flask para inicializar la BD
+export FLASK_APP=app.py
+flask init_db
