@@ -454,10 +454,6 @@ def clientes():
 
     asesoras = Asesora.query.all()  # Obtener todas las asesoras
 
-    return render_template('clientes.html', 
-                         clientes=query.all(),
-                         asesoras=asesoras) 
-
 
 @app.route('/registrar-cliente')
 @login_required
