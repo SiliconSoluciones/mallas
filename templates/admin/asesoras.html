@@ -52,7 +52,7 @@
                                     </a>
                                     
                                     {% if current_user.es_admin %}
-                                    <form action="{{ url_for('activar_permisos', id=asesora.id) }}" method="POST">
+                                    <form action="{{ url_for('activar_permisos', id=asesora.id) }}" method="POST" class="d-inline">
                                         <button type="submit" 
                                                 class="btn btn-icon rounded-circle btn-outline-warning btn-sm"
                                                 data-bs-toggle="tooltip" 
@@ -62,46 +62,14 @@
                                     </form>
 
                                     <button type="button" 
-                                            class="btn btn-icon rounded-circle btn-outline-danger btn-sm"
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#confirmDelete{{ asesora.id }}"
+                                            class="btn btn-icon rounded-circle btn-outline-danger btn-sm btn-delete"
+                                            data-asesora-id="{{ asesora.id }}"
+                                            data-asesora-nombre="{{ asesora.nombre|escapejs }}"
+                                            data-asesora-usuario="{{ asesora.usuario|escapejs }}"
                                             title="Eliminar">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                     {% endif %}
-                                </div>
-
-                                <!-- Modal de Confirmación -->
-                                <div class="modal fade" id="confirmDelete{{ asesora.id }}" tabindex="-1">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content border-0 shadow-lg">
-                                            <div class="modal-header bg-light">
-                                                <h5 class="modal-title text-danger">
-                                                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar eliminación
-                                                </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body py-4">
-                                                <div class="d-flex align-items-center mb-3">
-                                                    <div class="avatar-icon bg-soft-danger rounded-3 me-3 p-3">
-                                                        <i class="fas fa-user-slash text-danger fa-lg"></i>
-                                                    </div>
-                                                    <div>
-                                                        <h6 class="mb-1">¿Eliminar permanentemente?</h6>
-                                                        <p class="text-muted mb-0 small">{{ asesora.nombre }} ({{ asesora.usuario }})</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer bg-light">
-                                                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                                                <form action="{{ url_for('eliminar_asesora', id=asesora.id) }}" method="POST">
-                                                    <button type="submit" class="btn btn-danger rounded-pill px-4">
-                                                        <i class="fas fa-trash-alt me-2"></i>Eliminar
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </td>
                         </tr>
@@ -112,4 +80,182 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Confirmación Único -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title text-danger" id="confirmDeleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirmar eliminación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="avatar-icon bg-soft-danger rounded-3 me-3 p-3">
+                        <i class="fas fa-user-slash text-danger fa-lg"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-1">¿Eliminar permanentemente?</h6>
+                        <p class="text-muted mb-0 small" id="asesoraInfo"></p>
+                    </div>
+                </div>
+                <div class="alert alert-warning d-flex align-items-center" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <small>Esta acción no se puede deshacer.</small>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <form id="deleteForm" method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">
+                        <i class="fas fa-trash-alt me-2"></i>Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-shadow:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: box-shadow 0.2s ease;
+}
+
+.btn-icon {
+    width: 35px;
+    height: 35px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bg-soft-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.small-icon {
+    font-size: 0.7em;
+}
+
+/* Prevenir parpadeo del modal */
+.modal.fade .modal-dialog {
+    transition: transform 0.15s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: none;
+}
+
+/* Mejorar la animación del modal */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-backdrop.fade {
+    opacity: 0;
+}
+
+.modal-backdrop.show {
+    opacity: 1;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos del DOM
+    const modal = document.getElementById('confirmDeleteModal');
+    const deleteForm = document.getElementById('deleteForm');
+    const asesoraInfo = document.getElementById('asesoraInfo');
+    const deleteButtons = document.querySelectorAll('.btn-delete');
+    
+    // Verificar que los elementos existen
+    if (!modal || !deleteForm || !asesoraInfo) {
+        console.error('Elementos del modal no encontrados');
+        return;
+    }
+    
+    // Agregar event listeners a todos los botones de eliminar
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Prevenir múltiples clics
+            if (button.disabled) return;
+            button.disabled = true;
+            
+            // Obtener datos de la asesora
+            const asesoraId = this.dataset.asesoraId;
+            const asesoraNombre = this.dataset.asesoraNombre;
+            const asesoraUsuario = this.dataset.asesoraUsuario;
+            
+            // Validar datos
+            if (!asesoraId || !asesoraNombre || !asesoraUsuario) {
+                console.error('Datos de asesora incompletos');
+                button.disabled = false;
+                return;
+            }
+            
+            // Actualizar contenido del modal
+            asesoraInfo.textContent = `${asesoraNombre} (${asesoraUsuario})`;
+            deleteForm.action = `/admin/asesoras/eliminar/${asesoraId}`;
+            
+            // Mostrar modal con un pequeño delay para evitar conflictos
+            setTimeout(() => {
+                try {
+                    const bsModal = new bootstrap.Modal(modal, {
+                        backdrop: 'static',
+                        keyboard: false
+                    });
+                    bsModal.show();
+                } catch (error) {
+                    console.error('Error al mostrar modal:', error);
+                }
+                
+                // Reactivar botón después de mostrar modal
+                button.disabled = false;
+            }, 100);
+        });
+    });
+    
+    // Event listener para cuando se cierra el modal
+    modal.addEventListener('hidden.bs.modal', function() {
+        // Limpiar el formulario
+        deleteForm.action = '';
+        asesoraInfo.textContent = '';
+        
+        // Reactivar todos los botones
+        deleteButtons.forEach(btn => {
+            btn.disabled = false;
+        });
+    });
+    
+    // Prevenir envío múltiple del formulario
+    deleteForm.addEventListener('submit', function(e) {
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn.disabled) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Deshabilitar botón y mostrar loading
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Eliminando...';
+    });
+    
+    // Inicializar tooltips si Bootstrap está disponible
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+});
+</script>
+
 {% endblock %}
