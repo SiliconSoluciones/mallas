@@ -2,31 +2,34 @@
 {% block title %}Clientes Pendientes{% endblock %}
 
 {% block content %}
-<div class="card shadow-lg">
+<div class="card shadow-lg mb-4">
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
         <h4 class="mb-0"><i class="fas fa-clock me-2"></i>Ventas Pendientes</h4>
-        {% if current_user.es_admin %}
-        <a href="{{ url_for('registrar_cliente') }}" class="btn btn-light btn-sm">
-            <i class="fas fa-plus me-2"></i>Nuevo Cliente
-        </a>
-        {% endif %}
+        <div>
+            {% if current_user.es_admin %}
+            <a href="{{ url_for('registrar_cliente') }}" class="btn btn-light btn-sm">
+                <i class="fas fa-plus me-2"></i>Nuevo Cliente
+            </a>
+            {% endif %}
+        </div>
     </div>
     
     <div class="card-body p-0">
+        {% if clientes %}
         <div class="table-responsive">
             <table class="table table-hover align-middle m-0">
-                <thead class="table-info">
+                <thead class="table-light">
                     <tr>
                         <th style="width: 40px"></th>
-                        <th>Nombre</th>
+                        <th>Cliente</th>
                         <th>Contacto</th>
-                        <th>Fecha Creación</th>
-                        <th>Fecha Recordatorio</th>
+                        <th class="d-none d-md-table-cell">Fecha</th>
+                        <th>Recordatorio</th>
                         <th>Asesora</th>
-                        <th>Monto Total</th>
-                        <th>Abono</th>
-                        <th>Etapa</th>
-                        <th>Descripción</th>
+                        <th class="text-end">Monto</th>
+                        <th class="text-end">Abono</th>
+                        <th>Estado</th>
+                        <th class="d-none d-lg-table-cell">Descripción</th>
                         {% if current_user.es_admin or current_user.permiso_temporal %}<th>Acciones</th>{% endif %}
                     </tr>
                 </thead>
@@ -45,7 +48,7 @@
                             <a href="#" class="text-dark fw-bold text-decoration-none"
                                data-bs-toggle="collapse" 
                                data-bs-target="#details{{ cliente.id }}">
-                                {{ cliente.nombre }}
+                                {{ cliente.nombre|truncate(20) }}
                             </a>
                         </td>
                         
@@ -55,12 +58,12 @@
                                target="_blank"
                                data-bs-toggle="tooltip"
                                title="Abrir en WhatsApp">
-                                <i class="fab fa-whatsapp me-2"></i>{{ cliente.telefono }}
+                                <i class="fab fa-whatsapp me-1"></i>{{ cliente.telefono|truncate(10) }}
                             </a>
                         </td>
                         
-                        <td>
-                            {{ cliente.fecha_creacion.strftime('%d/%m/%Y') }}
+                        <td class="d-none d-md-table-cell">
+                            <small>{{ cliente.fecha_creacion.strftime('%d/%m/%Y') }}</small>
                         </td>
 
                         <td>
@@ -76,13 +79,13 @@
                         
                         <td>
                             <span class="badge bg-primary">
-                                {{ cliente.asesora.nombre if cliente.asesora else 'Sin asignar' }}
+                                {{ cliente.asesora.nombre if cliente.asesora else 'Sin asignar'|truncate(10) }}
                             </span>
                         </td>
                         
-                        <td>${{ "%0.2f"|format(cliente.monto_total) }}</td>
+                        <td class="text-end">${{ "%0.2f"|format(cliente.monto_total) }}</td>
                         
-                        <td>
+                        <td class="text-end">
                             <form action="{{ url_for('actualizar_abono', id=cliente.id) }}" method="POST">
                                 <input type="number" 
                                        name="abono" 
@@ -102,20 +105,22 @@
                                 <select name="etapa" 
                                         class="form-select form-select-sm etapa-select"
                                         onchange="this.form.submit()"
-                                        {% if not (current_user.es_admin or current_user.permiso_temporal) and cliente.asesora_id != current_user.id %}disabled{% endif %}>
-                                    <option value="por_llamar" {{ 'selected' if cliente.etapa == 'por_llamar' }}>📞 Por llamar</option>
-                                    <option value="fabricacion" {{ 'selected' if cliente.etapa == 'fabricacion' }}>🛠️ Fabricación</option>
-                                    <option value="por_entregar" {{ 'selected' if cliente.etapa == 'por_entregar' }}>🚚 Por entregar</option>
+                                        {% if not (current_user.es_admin or current_user.permiso_temporal) and cliente.asesora_id != current_user.id %}disabled{% endif %}
+                                        data-etapa-actual="{{ cliente.etapa }}">
+                                    <option value="por_llamar" {{ 'selected' if cliente.etapa == 'por_llamar' }}><i class="fas fa-phone me-1"></i> Por llamar</option>
+                                    <option value="fabricacion" {{ 'selected' if cliente.etapa == 'fabricacion' }}><i class="fas fa-tools me-1"></i> Fabricación</option>
+                                    <option value="por_entregar" {{ 'selected' if cliente.etapa == 'por_entregar' }}><i class="fas fa-truck me-1"></i> Por entregar</option>
                                 </select>
                             </form>
                         </td>
 
-                        <td>
+                        <td class="d-none d-lg-table-cell">
                             <form action="{{ url_for('actualizar_descripcion', id=cliente.id) }}" method="POST">
                                 <textarea class="form-control form-control-sm" 
                                           name="descripcion"
                                           rows="1"
                                           onchange="this.form.submit()"
+                                          placeholder="Notas..."
                                           {% if cliente.asesora_id != current_user.id and not current_user.es_admin %}disabled{% endif %}>
                                     {{ cliente.descripcion }}
                                 </textarea>
@@ -123,42 +128,34 @@
                         </td>
                         
                         <td>
-                            <div class="d-flex gap-2">
-                                {% if current_user.permiso_temporal %}
-                                    <button class="btn btn-sm btn-outline-warning"
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#editModalLimited{{ loop.index }}"
-                                            title="Edición limitada">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                {% elif current_user.es_admin %}
-                                    <button class="btn btn-sm btn-outline-warning"
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#editModal{{ loop.index }}"
-                                            title="Editar cliente">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                {% endif %}
-
-                                {% if current_user.es_admin %}
-                                    <form action="{{ url_for('finalizar_venta', id=cliente.id) }}" method="POST">
-                                        <button type="submit" 
-                                                class="btn btn-sm btn-outline-success"
-                                                title="Finalizar venta"
-                                                onclick="return confirm('¿Confirmar finalización?')">
-                                            <i class="fas fa-check-circle"></i>
-                                        </button>
-                                    </form>
-
-                                    <form action="{{ url_for('eliminar_cliente', id=cliente.id) }}" method="POST">
-                                        <button type="submit" 
-                                                class="btn btn-sm btn-outline-danger"
-                                                title="Eliminar cliente"
-                                                onclick="return confirm('¿Eliminar cliente permanentemente?')">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                {% endif %}
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="actionsDropdown{{ cliente.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown{{ cliente.id }}">
+                                    {% if current_user.permiso_temporal %}
+                                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editModalLimited{{ loop.index }}"><i class="fas fa-edit me-2"></i>Edición limitada</a></li>
+                                    {% elif current_user.es_admin %}
+                                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editModal{{ loop.index }}"><i class="fas fa-edit me-2"></i>Editar cliente</a></li>
+                                    {% endif %}
+                                    {% if current_user.es_admin %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form action="{{ url_for('finalizar_venta', id=cliente.id) }}" method="POST" class="d-inline">
+                                                <button type="submit" class="dropdown-item" onclick="return confirm('¿Confirmar finalización?')">
+                                                    <i class="fas fa-check-circle me-2"></i>Finalizar venta
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form action="{{ url_for('eliminar_cliente', id=cliente.id) }}" method="POST" class="d-inline">
+                                                <button type="submit" class="dropdown-item text-danger" onclick="return confirm('¿Eliminar cliente permanentemente?')">
+                                                    <i class="fas fa-trash me-2"></i>Eliminar
+                                                </button>
+                                            </form>
+                                        </li>
+                                    {% endif %}
+                                </ul>
                             </div>
                         </td>
                     </tr>
@@ -169,8 +166,21 @@
                             <div class="px-4 py-3">
                                 <div class="row">
                                     <div class="col-md-6 border-end">
-                                        <h5 class="mb-4"><i class="fas fa-info-circle me-2"></i>Detalles completos</h5>
+                                        <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Detalles completos</h5>
                                         <dl class="row">
+                                            <dt class="col-sm-4">Nombre:</dt>
+                                            <dd class="col-sm-8">{{ cliente.nombre }}</dd>
+                                            
+                                            <dt class="col-sm-4">Teléfono:</dt>
+                                            <dd class="col-sm-8">
+                                                <a href="https://wa.me/57{{ cliente.telefono }}" class="text-decoration-none">
+                                                    <i class="fab fa-whatsapp me-1"></i>{{ cliente.telefono }}
+                                                </a>
+                                            </dd>
+                                            
+                                            <dt class="col-sm-4">Fecha creación:</dt>
+                                            <dd class="col-sm-8">{{ cliente.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</dd>
+                                            
                                             <dt class="col-sm-4">Saldo restante:</dt>
                                             <dd class="col-sm-8 h4 text-success">
                                                 ${{ "%0.2f"|format(cliente.monto_total - cliente.abono) }}
@@ -178,22 +188,26 @@
                                             
                                             <dt class="col-sm-4">Estado actual:</dt>
                                             <dd class="col-sm-8">
-                                                <span class="badge bg-{{ 'warning' if cliente.etapa == 'por_llamar' else 'info' if cliente.etapa == 'fabricacion' else 'success' }}">
-                                                    {{ cliente.etapa|replace('_', ' ')|title }}
+                                                <span class="badge bg-{{ 'warning' if cliente.etapa == 'por_llamar' else 'info' if cliente.etapa == 'fabricacion' else 'success' }} py-2">
+                                                    {% if cliente.etapa == 'por_llamar' %}
+                                                    <i class="fas fa-phone me-1"></i> Por llamar
+                                                    {% elif cliente.etapa == 'fabricacion' %}
+                                                    <i class="fas fa-tools me-1"></i> Fabricación
+                                                    {% else %}
+                                                    <i class="fas fa-truck me-1"></i> Por entregar
+                                                    {% endif %}
                                                 </span>
                                             </dd>
                                             
-                                            <dt class="col-sm-4">Descripción completa:</dt>
+                                            <dt class="col-sm-4">Descripción:</dt>
                                             <dd class="col-sm-8">{{ cliente.descripcion or 'Sin descripción' }}</dd>
-                                            
-                            
                                         </dl>
                                     </div>
                                     
                                     <div class="col-md-6 ps-4">
                                         <div class="d-flex flex-column h-100">
-                                            <h5 class="mb-4"><i class="fas fa-tools me-2"></i>Acciones rápidas</h5>
-                                            <div class="d-grid gap-3">
+                                            <h5 class="mb-3"><i class="fas fa-tools me-2"></i>Acciones rápidas</h5>
+                                            <div class="d-grid gap-2">
                                                 {% if current_user.es_admin %}
                                                 <form action="{{ url_for('finalizar_venta', id=cliente.id) }}" method="POST">
                                                     <button type="submit" 
@@ -208,6 +222,12 @@
                                                    class="btn btn-outline-primary w-100">
                                                     <i class="fas fa-history me-2"></i>Ver detalles completos
                                                 </a>
+                                                
+                                                <a href="https://wa.me/57{{ cliente.telefono }}" 
+                                                   class="btn btn-outline-success w-100"
+                                                   target="_blank">
+                                                    <i class="fab fa-whatsapp me-2"></i>Contactar por WhatsApp
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
@@ -215,18 +235,41 @@
                             </div>
                         </td>
                     </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="11" class="text-center text-muted py-4">
-                            <i class="fas fa-box-open fa-2x"></i><br>
-                            No hay clientes pendientes
-                        </td>
-                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        {% else %}
+        <div class="text-center py-5">
+            <div class="py-4">
+                <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+                <h4 class="mb-2">No hay clientes pendientes</h4>
+                <p class="text-muted">¡Todo está al día! Puedes agregar nuevos clientes.</p>
+                {% if current_user.es_admin %}
+                <a href="{{ url_for('registrar_cliente') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-plus me-2"></i>Agregar primer cliente
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
+    
+    {% if clientes %}
+    <div class="card-footer bg-light">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Mostrando {{ clientes|length }} clientes pendientes</small>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary" id="expandAllBtn">
+                    <i class="fas fa-expand me-1"></i>Expandir todos
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" id="collapseAllBtn">
+                    <i class="fas fa-compress me-1"></i>Contraer todos
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Modal de edición limitada para permisos temporales -->
@@ -373,17 +416,17 @@
         transition: all 0.3s ease;
     }
     
-    .etapa-select[value="por_llamar"] { 
+    .etapa-select[data-etapa-actual="por_llamar"] { 
         background-color: #fff3cd;
         border-color: #ffecb5;
     }
     
-    .etapa-select[value="fabricacion"] { 
+    .etapa-select[data-etapa-actual="fabricacion"] { 
         background-color: #cff4fc;
         border-color: #b6effb;
     }
     
-    .etapa-select[value="por_entregar"] { 
+    .etapa-select[data-etapa-actual="por_entregar"] { 
         background-color: #d1e7dd;
         border-color: #c3dfd5;
     }
@@ -400,6 +443,21 @@
     textarea.form-control-sm {
         min-height: 38px;
         resize: vertical;
+    }
+    
+    .badge.bg-warning {
+        color: #212529;
+    }
+    
+    .table thead th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .table tbody td {
+        vertical-align: middle;
     }
 </style>
 
@@ -433,6 +491,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.value = max.toFixed(2);
                 alert('El abono no puede superar el monto total');
             }
+        });
+    });
+    
+    // Expandir todos los detalles
+    document.getElementById('expandAllBtn')?.addEventListener('click', function() {
+        document.querySelectorAll('.collapse').forEach(collapse => {
+            new bootstrap.Collapse(collapse, { toggle: true });
+        });
+        document.querySelectorAll('.toggle-icon').forEach(icon => {
+            icon.style.transform = 'rotate(180deg)';
+        });
+    });
+    
+    // Contraer todos los detalles
+    document.getElementById('collapseAllBtn')?.addEventListener('click', function() {
+        document.querySelectorAll('.collapse.show').forEach(collapse => {
+            new bootstrap.Collapse(collapse, { hide: true });
+        });
+        document.querySelectorAll('.toggle-icon').forEach(icon => {
+            icon.style.transform = 'rotate(0deg)';
         });
     });
 });
